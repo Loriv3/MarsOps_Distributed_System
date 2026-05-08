@@ -1,0 +1,559 @@
+MarsOps
+User Stories & LoFi Mockups
+
+MarsOps is a distributed automation platform designed to guarantee the survival
+of occupants in a Martian habitat by integrating heterogeneous IoT devices
+into a unified monitoring system.
+
+MarsOps — User Stories & LoFi Mockups
+
+1 / 16
+
+User Stories Overview
+
+Backend / System
+Frontend / Operator
+US11 Sensor values updated automatically
+US12 Out-of-range visual highlighting
+US13 Sensor trend line chart
+US14 Create, view, delete rules from dashboard
+US15 System connection status indicator
+US16 Retrieve latest sensor values on load
+US17 View actuator ON/OFF state
+US18 Manually toggle actuators
+US19 Actuator state updates immediately
+
+MarsOps — User Stories & LoFi Mockups
+
+US1 Periodically poll REST sensors
+US2 Receive telemetry data in real time
+US3 Normalize raw payloads to standard event
+US4 Publish normalized events to broker
+US5 Fetch sensors and topics at startup
+US6 Create automation rules
+US7 Evaluate rules on every broker event
+US8 Rules survive service restarts
+US9 List configured rules
+US10 Delete existing rules
+US20 Keep last known actuator state in memory
+
+2 / 16
+
+Groups Page — Sensor Groups Overview
+#
+5
+
+As a
+Operator
+
+I want to
+fetch the list of sensors at startup
+
+So that
+no manual configuration is required
+
+#
+11
+
+As a
+Operator
+
+I want to
+see all sensor values updated automatically
+
+So that
+I can monitor the habitat without refreshing the page
+
+#
+16
+
+As a
+Frontend
+
+I want to
+retrieve the latest value of all sensors
+
+So that
+the dashboard can be populated on
+initial load
+
+Non-functional Requirements
+Real-time: values pushed via WebSocket, no manual page refresh required
+Availability: groups populated at startup by querying the Frontend State API
+
+MarsOps — User Stories & LoFi Mockups
+
+3 / 16
+
+Groups Page — Sensor Groups Overview — Mockup
+
+MarsOps — User Stories & LoFi Mockups
+
+4 / 16
+
+Groups Page — Group Detail
+#
+11
+
+As a
+Operator
+
+I want to
+see all sensor values updated automatically
+
+So that
+I can monitor the habitat without refreshing the page
+
+#
+12
+
+As a
+Operator
+
+I want to
+have out-of-range values highlighted
+visually
+
+So that
+I can immediately identify dangerous
+situations
+
+#
+13
+
+As a
+Operator
+
+I want to
+see a line chart of a sensor’s trend
+during the session
+
+So that
+I can spot patterns and anomalies
+over time
+
+Non-functional Requirements
+Visual feedback: the status field in the broker event triggers color change (red/orange)
+History: trend data retained for the current session only (in-memory)
+
+MarsOps — User Stories & LoFi Mockups
+
+5 / 16
+
+Groups Page — Group Detail — Mockup
+
+MarsOps — User Stories & LoFi Mockups
+
+6 / 16
+
+Dashboard — Preferred Values
+#
+11
+
+As a
+Operator
+
+I want to
+see all sensor values updated automatically
+
+So that
+I can monitor the habitat without refreshing the page
+
+#
+12
+
+As a
+Operator
+
+I want to
+have out-of-range values highlighted
+visually
+
+So that
+I can immediately identify dangerous
+situations
+
+#
+13
+
+As a
+Operator
+
+I want to
+see a line chart of a sensor’s trend
+during the session
+
+So that
+I can spot patterns and anomalies
+over time
+
+#
+15
+
+As a
+Operator
+
+I want to
+see a status indicator showing
+whether the system is connected
+
+So that
+I can immediately tell if the infrastructure is working
+
+Non-functional Requirements
+Latency: dashboard reflects new values within seconds of broker publish
+Status indicator: green dot (top-right) reflects live WebSocket connection state
+MarsOps — User Stories & LoFi Mockups
+
+7 / 16
+
+Dashboard — Preferred Values — Mockup
+
+MarsOps — User Stories & LoFi Mockups
+
+8 / 16
+
+Actuators Page — State & Control
+#
+17
+
+As a
+Operator
+
+I want to
+see the current ON/OFF state of all
+actuators
+
+So that
+I know what is active in the habitat
+
+#
+18
+
+As a
+Operator
+
+I want to
+manually toggle an actuator on or off
+
+So that
+I can intervene directly in emergency
+situations
+
+#
+19
+
+As a
+Operator
+
+I want to
+have the actuator state update immediately after every command
+
+So that
+I always have a consistent view
+
+#
+20
+
+As a
+System
+
+I want to
+keep the last known state of each actuator in memory
+
+So that
+the dashboard and rule engine can
+access it without querying the environment
+
+Non-functional Requirements
+Consistency: toggle sends command to broker; state update propagated back via actuator.states
+Responsiveness: UI reflects new state without full page reload
+MarsOps — User Stories & LoFi Mockups
+
+9 / 16
+
+Actuators Page — State & Control — Mockup
+
+MarsOps — User Stories & LoFi Mockups
+
+10 / 16
+
+Actuators Page — Rule List
+#
+8
+
+As a
+Operator
+
+I want to
+have rules survive service restarts
+
+So that
+I do not have to reconfigure them
+every time
+
+#
+9
+
+As a
+Operator
+
+I want to
+see the list of all configured rules
+(condition, target actuator, status)
+
+So that
+I can keep track of what is automated
+
+#
+10
+
+As a
+Operator
+
+I want to
+delete an existing rule
+
+So that
+I can remove automations that are
+no longer needed
+
+#
+14
+
+As a
+Operator
+
+I want to
+view rules directly from the dashboard
+
+So that
+I do not need external tools
+
+Non-functional Requirements
+Persistence: rules stored in SQLite and survive service restarts
+Scoped view: rule list is filtered per actuator for easier management
+MarsOps — User Stories & LoFi Mockups
+
+11 / 16
+
+Actuators Page — Rule List — Mockup
+
+MarsOps — User Stories & LoFi Mockups
+
+12 / 16
+
+Actuators Page — Create Rule
+#
+6
+
+As a
+Operator
+
+I want to
+create rules so that actuators respond automatically to habitat conditions
+
+So that
+dangerous environmental shifts are
+handled without manual intervention
+
+#
+7
+
+As a
+System
+
+I want to
+evaluate all relevant rules on every
+incoming broker event
+
+So that
+actuators are commanded in real
+time when conditions are met
+
+#
+14
+
+As a
+Operator
+
+I want to
+create rules directly from the dashboard
+
+So that
+I do not need external tools
+
+Rule Model
+IF sensor operator value
+Operators: >, <, ≥, ≤, =
+the broker
+
+MarsOps — User Stories & LoFi Mockups
+
+THEN set actuator to state
+
+Evaluated in real-time on every sensor.events message published to
+
+13 / 16
+
+Actuators Page — Create Rule — Mockup
+
+MarsOps — User Stories & LoFi Mockups
+
+14 / 16
+
+Backend — Converter Service
+#
+1
+
+As a
+Operator
+
+I want to
+have the system periodically poll all
+REST sensors
+
+So that
+data is continuously updated without manual intervention
+
+#
+2
+
+As a
+Operator
+
+I want to
+have the system receive all telemetry
+data in real time
+
+So that
+
+#
+3
+
+As a
+Developer
+
+I want to
+have every raw payload converted
+into a standard internal event
+
+So that
+downstream components work on
+homogeneous data
+
+#
+4
+
+As a
+Ingestion component
+
+I want to
+have every normalized event published to a message broker topic
+
+So that
+all services can consume it in a decoupled way
+
+#
+5
+
+As a
+Operator
+
+I want to
+have the system fetch sensors and
+topics at startup
+
+So that
+no manual configuration is required
+
+Non-functional Requirements
+Polling interval: 5s for REST sensors
+MarsOps — User Stories & LoFi Mockups
+
+SSE: auto-reconnect on disconnect
+15 / 16
+
+Backend — Automation Rules Service
+#
+6
+
+As a
+Operator
+
+I want to
+create if-then rules via REST API
+
+So that
+actuators respond automatically to
+habitat conditions
+
+#
+7
+
+As a
+System
+
+I want to
+evaluate rules on every broker event
+
+So that
+actuators are commanded in real
+time when conditions are met
+
+#
+8
+
+As a
+Operator
+
+I want to
+have rules survive service restarts
+
+So that
+I do not have to reconfigure them
+every time
+
+#
+9
+
+As a
+Operator
+
+I want to
+see the list of all configured rules
+
+So that
+I can keep track of what is automated
+
+#
+10
+
+As a
+Operator
+
+I want to
+delete rules via REST API
+
+So that
+I can remove automations that are
+no longer needed
+
+#
+20
+
+As a
+System
+
+I want to
+keep the last known actuator state
+in memory
+
+So that
+dashboard and rule engine can access it without querying the environment
+
+MarsOps — User Stories & LoFi Mockups
+
+16 / 16
+
+

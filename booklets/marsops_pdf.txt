@@ -1,0 +1,556 @@
+MISSION: MARSOPS_2036
+
+WELCOME TO MARS.
+PLEASE DON’T DIE!
+MARSOPS: DISTRIBUTED AUTOMATION PLATFORM
+
+INSTITUTION
+
+PROGRAM
+
+GROUP
+
+Sapienza University of Rome
+
+MSc in Engineering in Computer Science & AI
+
+LoAP
+
+MARSOPS // PROJECT // V1.0
+
+PROJECT SCOPE
+MarsOps is a distributed automation platform designed to guarantee the survival of occupants in a Martian habitat by integrating
+heterogeneous IoT devices into a unified monitoring system. The platform acts as a bridge between a fragile habitat's infrastructure
+and the human operators.
+Operators can monitor critical environmental parameters in real-time through a centralized dashboard. They can, also, define
+rules to ensure that habitat actuators respond instantly to dangerous environmental shifts without manual intervention.
+By evaluating sensor data against operator-defined criteria, it triggers autonomous responses, such as activating cooling
+systems or emergency ventilation, without requiring manual intervention, mitigating risks in high-latency Martian environments.
+
+MARSOPS // MISSION_STATUS // COMPLETE
+
+MISSION STATUS: OPERATIONAL
+
+RELIABILITY
+
+AUTOMATION
+
+SCALABILITY
+
+Distributed architecture ensuring habitat
+
+Smart control loops mitigating risks in high-
+
+Microservices-ready design for future habitat
+
+survival through redundancy.
+
+latency environments.
+
+expansions.
+
+END OF TRANSMISSION
+
+MARSOPS // ARCHITECTURE // V1.0
+
+SYSTEM ARCHITECTURE
+
+MICROSERVICE ARCHITECTURE
+
+REDIS IN-MEMORY STATE CACHE
+
+DOCKER COMPOSE DEPLOYMENT
+
+AMQ AS MESSAGE BROKER
+
+REAL-TIME WEBSOCKET DASHBOARD
+
+REACTIVE RULE EVALUATION
+
+MARSOPS // ARCHITECTURE // V1.0
+
+SYSTEM ARCHITECTURE
+
+MARSOPS // CONVERTER // ARCHITECTURE
+
+INTERNAL ARCHITECTURE
+REST POLLER
+
+WEBSOCKET
+
+Polls 8 REST sensors every 5 seconds via httpx. Handles greenhouse_temperature,
+
+Subscribes to real-time telemetry streams (e.g., power, environment, thermal, airlock)
+
+hydroponic_ph, co2_hall, air_quality, water_tank_level and more.
+
+with auto-reconnect on disconnect.
+
+NORMALIZER REGISTRY
+
+COMMAND LISTENER
+
+Schema-driven registry: SENSOR_ID_NORMALIZERS for REST, SCHEMA_NORMALIZERS
+
+AMQP receiver on actuator.commands in a dedicated daemon thread. Bridges asyncio
+
+for SSE/actuators. Decouples source formats from unified schema.
+
+loop and AMQP via run_coroutine_threadsafe.
+
+STATELESS DESIGN — NO DATABASE, NO PERSISTENT STORAGE. ALL STATE LIVES IN THE BROKER.
+
+MARSOPS // PURPOSE // REL_3.3.2
+
+PURPOSE & CORE FUNCTIONALITY
+AUTOMATED CONTROL LOOP
+
+RULE EVALUATION
+
+Implements the habitat's automated control loop.
+
+Evaluates telemetry against operator-defined rules.
+
+TELEMETRY PROCESSING
+
+ACTUATOR COMMANDS
+
+Continuously receives sensor telemetry from the message broker.
+
+Emits commands for actuators when rule conditions are met.
+
+OPERATIONAL EXAMPLE
+If the temperature in a greenhouse group exceeds a configured threshold, a command is produced to switch the cooling fan ON. The process is automatic and requires no manual
+intervention.
+
+MARSOPS // CONVERTER-SERVICE // V1.0
+
+CONVERTER SERVICE
+The converter-service is the data ingestion and conversion layer of the MarsOps platform. It acts as a bridge between
+heterogeneous IoT sources, which have different event formats and communicate in different forms (such as SSE and polling),
+and the event queues that the other microservices attach to, ensuring that all other components operate on homogeneous and
+similarly structured data.
+
+By normalizing the way to receive data from sensors, it deduplicates the other complexity while removing it from all the
+other microservices, ensuring that they can treat every source as basically identical as long as it provides the same “type” of metric
+(for example temperature, pressure or air particle concentration).
+
+TARGET USER STORIES
+
+1, 2, 3, 4, 5, 20
+
+MARSOPS // CONVERTER // PIPELINE
+
+NORMALIZATION PIPELINE
+REST SENSORS (8 SOURCES)
+Poll every 5s via
+--> sensor.events
+
+httpx
+
+-->
+
+TELEMETRY TOPICS (4 GROUPS)
+
+SENSOR_ID_NORMALIZERS -->
+
+UnifiedEvent
+
+(multicast)
+
+ACTUATOR BOOT + COMMANDS
+Fetch
+-->
+REST on startup + AMQP
+actuator.states
+(anycast)
+
+actuator.commands
+
+SCHEMA_NORMALIZER
+SSE stream with auto-reconnect -->
+S (multicast)
+UnifiedEvent
+sensor.events
+-->
+
+-->
+
+UNIFIEDEVENT SCHEMA
+-->
+
+ActuatorEvent
+
+group_id
+
++ at +
+converter_version
+
+metrics[]{id, type, value[]}
+. Two event types, two queues.
+
+Both REST and SSE sources converge into the same UnifiedEvent schema, eliminating source-specific complexity for all downstream consumers.
+
++
+
+status
+
++
+
+MARSOPS // TECH_STACK // REL_3.3.2
+
+CONVERTER SERVICE - TECHNOLOGY STACK
+PYTHON 3
+
+HTTPX
+
+AMQ (STOMP, PROTON)
+
+Provides acceptable performance while being extremely fast to
+
+Enables HTTP request support in order to interface with the
+
+Interacts with the message queues in order to exchange
+
+prototype in and having a rich ecosystem.
+
+sensors’ and actuators HTTP APIs.
+
+messages with every other part of the system.
+
+MARSOPS // SERVICE // CACHING
+
+CACHING SERVICE
+IN-MEMORY STORAGE
+The Caching Service uses Redis to store the most recent state of all sensors and
+
+LOW LATENCY
+Provides sub-millisecond access to habitat telemetry for critical decision-making.
+
+actuators.
+
+STATE SYNCHRONIZATION
+Ensures all microservices have a consistent view of the habitat's current status.
+
+DASHBOARD SUPPORT
+Powers the real-time dashboard by providing the initial state on connection.
+
+TECHNICAL NOTE
+By decoupling state from the primary database, the Caching Service reduces load on persistent storage and ensures high availability of real-time data across the entire MarsOps
+ecosystem.
+
+MARSOPS // CONVERTER-SERVICE // V1.0
+
+CACHE SERVICE
+The cache service ensures that upon outages of the converter service, or whenever other microservices restart, they can
+immediately query the system’s current state without waiting for update messages to appear on the internal event queue. It does so
+by using Redis as an in-memory “ephemeral” cache, that however can still immediately provide the needed data.
+
+This powers several parts of the system: for example, whenever the frontend connects for live updates, an initial batch of
+synthesized updates is immediately sent to notify it of the state that it should display, in order to never display an empty dashboard.
+Analogously, when the automation rules service starts, it can fetch the current state for all sensors and actuators so that it can know
+which rules to skip as they have already run.
+
+MARSOPS // TECH_STACK // REL_3.3.2
+
+CACHE SERVICE - TECHNOLOGY STACK
+PYTHON 3
+
+FASTAPI
+Provides built-in support for OpenAPI and Swagger
+documentation, as well as enabling fast API prototyping.
+
+REDIS
+Provides the in-memory cache that powers the service.
+
+MARSOPS // CONVERTER-SERVICE // V1.0
+
+METRICS SERVICE
+The metrics service acts as middleware between the backend’s internal event queues and cache and a user or frontend that
+might just want to receive live updates over more standard web browser protocols. For this reason, it exposes WebSockets for both
+general updates, spanning all metrics, and more granular updates, for specific metric “group”, in order to avoid overloading a client
+with information that it doesn’t care about.
+As described in the previous slides, when a WebSocket is opened it first sends to it the currently cached state. This ensures that as
+soon as clients request data, they receive a valid copy of it to display, while still getting live updates later.
+Additionally, it enables discovery of all available metrics and their names and info by the frontend, making sure that it doesn’t have to
+hardcode almost anything.
+
+MARSOPS // SERVICE // ACTUATOR
+
+ACTUATOR SERVICE
+FUNCTION
+Acts as the "bridge" between the Automation Engine (logic provider) and the physical actuators of the Martian habitat.
+
+SUBSCRIPTION
+Listens to the dedicated command topic (multicast/ actuator.commands) on AMQ/Kafka.
+
+VALIDATION
+Ensures the command matches the JSON schema defined in the contract.
+
+EXECUTION
+Provides a REST POST request to the specific actuator endpoint (e.g.,
+Queue
+
+actuator.commands
+
+/api/actuators/cooling_fan
+
+) to update its state. The new state is sent to the
+
+, managed by the Converter Service who will then update the state of the actuator with a REST call to the Simulator.
+
+REAL-TIME STATE BROADCASTING
+Exposes dedicated WebSocket channels (e.g.,
+
+/api/actuators/ws
+
+) to instantly push live state changes to the frontend. This ensures operators immediately
+
+see the physical response (ON/OFF) to their manual commands or automated rules without refreshing the dashboard.
+
+MARSOPS // CONVERTER-SERVICE // V1.0
+
+ACTUATOR SERVICE
+The actuator service also acts as middleware between the backend’s internal event queues and cache and a user or frontend,
+however this time that is relative to the actuators’ state and their updates. For this reason, in addition to the discovery features and
+WebSockets for live state updates, it also provides POST endpoints to manually toggle actuators from the dashboard.
+Like the metrics service, it also caches actuators’ state.
+
+MARSOPS // COMMUNICATION // WS_V1.0
+
+WEBSOCKETS
+GLOBAL STATUS WEBSOCKET
+
+/api/sensors/ws & /api/actuators/ws
+
+Provides a broadcast stream of all sensor/actuator states, synchronizing the entire habitat dashboard upon connection by fetching the full dataset from the Redis
+cache.
+
+TARGETED DEVICE WEBSOCKET
+
+/api/sensors/{id}/ws & /api/actuators/{id}/ws
+
+Dedicated low-latency channel for monitoring a specific hardware component, reducing overhead by filtering updates exclusively for the selected actuator ID.
+
+MARSOPS // TECH_STACK // REL_3.3.2
+
+METRICS/ACTUATOR SERVICES - TECHNOLOGY STACK
+PYTHON 3
+
+FASTAPI
+
+AMQ (PROTON)
+
+MARSOPS // CONVERTER-SERVICE // V1.0
+
+AUTOMATION RULES SERVICE
+The automation rules service maintains a core part of the system, by managing and persisting the automation rules that make
+sure it correctly responds to specific situations detected by the sensors with the actuators it has available. For this reason, whenever
+it receives updates from the sensor state queue, it evaluates them against all the rules it has stored and decides if a rule needs to be
+fired. If so, it sends a message to the converter service to toggle the relevant actuator.
+Internally, it uses SQLite to store automation rules, making sure that they don’t go lost even if the system goes down. Additionally, it
+stores metadata about when the rules were fired, and why.
+For a frontend, it provides a rich API to view, edit and delete all rules, as well as consulting the aforementioned logging data it has
+collected; like the other services, it also provides a description of all this in a standardized OpenAPI format.
+
+MARSOPS // TECH_STACK // REL_3.3.2
+
+AUTOMATION RULES - TECHNOLOGY STACK
+JAVA 21 + LOMBOK + JACKSON
+Industry-standard language, with libraries added specifically for
+boilerplate reduction.
+
+SPRING BOOT 3.3.2
+Spring Web, JMS, and JDBC modules.
+
+SQLITE (JDBC)
+Lightweight embedded persistent storage.
+
+MARSOPS // REST_API // RULE_MGMT
+
+REST API & RULE DEFINITION
+ENDPOINT: /API/RULES
+Standard CRUD semantics for comprehensive rule management: list, get by ID, create, update, enable/disable, and delete rules.
+
+GROUP_ID & METRIC_ID
+
+OPERATOR
+
+Identifies metric within sensor group.
+
+Comparison operator (e.g.,
+
+COMPARE_VALUE
+
+UNIT
+
+Threshold for comparison (numeric or string).
+
+Optional unit filter for event value.
+
+ACTUATOR_ID & ACTUATOR_STATE
+
+ENABLED
+
+Target actuator and boolean state.
+
+Flag to activate/deactivate the rule.
+
+lt , eq , gt ).
+
+VALIDATION & TRACEABILITY
+Input validation is enforced via Jakarta Bean Validation (400 Bad Request for invalid inputs). All rule changes generate structured audit log entries prefixed with [AUTOMATION-AUDIT],
+ensuring critical configuration traceability.
+
+MARSOPS // RULE_ENGINE // ANTI_SPAM
+
+RULE ENGINE & ANTI-SPAM LOGIC
+EXECUTION PIPELINE
+
+1
+
+2
+
+SMART SUPPRESSION
+
+EVENT PARSING
+
+If the actuator is already in the desired state, the command is suppressed to
+MetricGroupStateEvent
+
+Extracting data from
+
+.
+
+prevent broker flooding.
+
+RULE MATCHING
+group_id
+
+Retrieving rules by
+
++ metric_id
+
+ActuatorStateListener maintains an in-memory
+
+.
+
+ConcurrentHashMap of the current state of each actuator.
+
+3
+
+TYPED EVAL
+
+4
+
+COMMAND GENERATION
+
+5
+
+PERSISTENCE
+
+Evaluation using
+
+evaluateDouble()
+
+Creating structured
+
+Recording firing in the
+
+ActuatorCommand
+
+rule_firings
+
+or evaluateString()
+
+object.
+
+table.
+
+.
+
+MARSOPS // CONVERTER // MSG_SCHEMA
+
+MESSAGE SCHEMA
+SENSOR EVENT
+
+ACTUATOR STATE
+
+ACTUATOR COMMAND
+
+→ sensor.events
+
+→ actuator.states
+
+← actuator.commands
+
+{
+
+{
+"converter_version": "1.0.0",
+"group_id": "air_quality",
+"at": "2026-03...",
+"metrics": [{
+"id": "voc",
+"type": "...",
+"value": [{
+"value": 604.48,
+"unit": "ppb"
+}]
+}],
+"status": "ok|warning"
+
+{
+"actuator_id": "cooling_fan",
+"is_on": true,
+"updated_at": "2026-03-..."
+
+"actuator_id": "cooling_fan",
+"is_on": true,
+"created_at": "2026-03-..."
+
+}
+
+}
+
+}
+
+MESSAGING FLOW (END-TO-END)
+Simulator REST API
+↓ poll / fetch
+Converter Service
+↓ normalize
+sensor.events (multicast)
+↓ consume
+automation-rules
+↓ evaluate rules
+actuator.commands (anycast)
+↓ consume
+Converter Service
+
+↓ REST call
+Simulator REST API
+↓ publish new state
+actuator.states (anycast)
+
+MARSOPS // CONVERTER // MSG_SCHEMA
+
+FRONTEND
+
+MARSOPS // CONVERTER // MSG_SCHEMA
+
+FRONTEND
+
+MARSOPS // CONVERTER // MSG_SCHEMA
+
+FRONTEND
+
+MARSOPS // CONVERTER // MSG_SCHEMA
+
+FRONTEND
+
+MARSOPS // CONVERTER // MSG_SCHEMA
+
+FRONTEND
+
+
